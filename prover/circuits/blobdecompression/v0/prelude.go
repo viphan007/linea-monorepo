@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/consensys/zkevm-monorepo/prover/circuits/internal"
+	"github.com/consensys/zkevm-monorepo/prover/lib/compressor/blob/dictionary"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-377/fr"
 	fr381 "github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
@@ -54,7 +55,12 @@ func Assign(blobData, dict []byte, eip4844Enabled bool, x [32]byte, y fr381.Elem
 		return
 	}
 
-	header, uncompressedData, _, err := blob.DecompressBlob(blobData, dict)
+	dictStore, err := dictionary.SingletonStore(dict, 0)
+	if err != nil {
+		err = fmt.Errorf("failed to create dictionary store %w", err)
+		return
+	}
+	header, uncompressedData, _, err := blob.DecompressBlob(blobData, dictStore)
 	if err != nil {
 		err = fmt.Errorf("decompression circuit assignment : could not decompress the data : %w", err)
 		return

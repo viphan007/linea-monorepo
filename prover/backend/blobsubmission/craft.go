@@ -4,12 +4,12 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/consensys/zkevm-monorepo/prover/lib/compressor/blob/encode"
 	"hash"
 
 	"github.com/consensys/zkevm-monorepo/prover/crypto/mimc"
 
 	fr381 "github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
-	blob "github.com/consensys/zkevm-monorepo/prover/lib/compressor/blob/v1"
 	"github.com/consensys/zkevm-monorepo/prover/utils"
 	"golang.org/x/crypto/sha3"
 )
@@ -72,7 +72,7 @@ func CraftResponseCalldata(req *Request) (*Response, error) {
 	}
 
 	// Compute all the prover fields
-	snarkHash, err := blob.MiMCChecksumPackedData(compressedStream, fr381.Bits-1, blob.NoTerminalSymbol())
+	snarkHash, err := encode.MiMCChecksumPackedData(compressedStream, fr381.Bits-1, encode.NoTerminalSymbol())
 	if err != nil {
 		return nil, fmt.Errorf("crafting response: could not compute snark hash: %w", err)
 	}

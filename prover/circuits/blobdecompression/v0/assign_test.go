@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	v0 "github.com/consensys/zkevm-monorepo/prover/circuits/blobdecompression/v0"
+	"github.com/consensys/zkevm-monorepo/prover/lib/compressor/blob/dictionary"
 	"github.com/consensys/zkevm-monorepo/prover/lib/compressor/blob/v1/test_utils"
 	"os"
 	"testing"
@@ -73,7 +74,9 @@ func mustGetTestCompressedData(t *testing.T) (resp blobsubmission.Response, blob
 	blobBytes, err = base64.StdEncoding.DecodeString(resp.CompressedData)
 	assert.NoError(t, err)
 
-	_, _, _, err = blob.DecompressBlob(blobBytes, dict)
+	dictStore, err := dictionary.SingletonStore(dict, 0)
+	assert.NoError(t, err)
+	_, _, _, err = blob.DecompressBlob(blobBytes, dictStore)
 	assert.NoError(t, err)
 
 	return
