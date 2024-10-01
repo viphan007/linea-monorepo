@@ -7,6 +7,7 @@ configurations.configureEach {
   exclude group: "it.unimi.dsi", module: "fastutil"
   exclude group: "org.hyperledger.besu", module: "bls12-381"
   exclude group: "org.hyperledger.besu", module: "secp256r1"
+  exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
 }
 
 dependencies {
@@ -95,4 +96,42 @@ run {
     .findAll { it.key.startsWith("config") }
     .collect { "-D${it.key}=${it.value}" }
   args = ["--traces-limits", "config/common/traces-limits-v1.toml", "--smart-contract-errors", "config/common/smart-contract-errors.toml", "--gas-price-cap-time-of-day-multipliers", "config/common/gas-price-cap-time-of-day-multipliers.toml", "config/coordinator/coordinator-docker.config.toml", "config/coordinator/coordinator-local-dev.config.overrides.toml"]
+}
+
+tasks.register("depsize") {
+  description = 'Prints dependencies for "default" configuration'
+  doLast() {
+    listConfigurationDependencies(configurations.compileClasspath)
+  }
+}
+
+tasks.register("depsize-all-configurations") {
+  description = 'Prints dependencies for all available configurations'
+  doLast() {
+    configurations
+      .findAll { it.isCanBeResolved() }
+      .each { listConfigurationDependencies(it) }
+  }
+}
+
+def listConfigurationDependencies(Configuration configuration) {
+  def formatStr = "%,10.2f"
+
+  def size = configuration.collect { it.length() / (1024 * 1024) }.sum()
+
+  def out = new StringBuffer()
+  out << "\nConfiguration name: \"${configuration.name}\"\n"
+  if (size) {
+    out << 'Total dependencies size:'.padRight(65)
+    out << "${String.format(formatStr, size)} Mb\n\n"
+
+    configuration.sort { -it.length() }
+      .each {
+        out << "${it.name}".padRight(65)
+        out << "${String.format(formatStr, (it.length() / 1024))} kb\n"
+      }
+  } else {
+    out << 'No dependencies found';
+  }
+  println(out)
 }
