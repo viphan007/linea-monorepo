@@ -8,6 +8,7 @@ configurations.configureEach {
   exclude group: "org.hyperledger.besu", module: "bls12-381"
   exclude group: "org.hyperledger.besu", module: "secp256r1"
   exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
+  exclude group: 'io.reactivex.rxjava2'
 }
 
 dependencies {
