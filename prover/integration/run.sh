@@ -20,7 +20,7 @@ LOCAL_DIR=./integration/${1}/tmp
 # The script is meant to be run from the prover folder and not the current
 # folder.
 
-TESTDATA_DIR=../testdata/prover-v2
+TESTDATA_DIR=../testdata/sepolia-data
 
 PROVER_AGGREG=prover-aggregation
 PROVER_COMPRESS=prover-compression
@@ -67,37 +67,38 @@ mkdir -p ${LOCAL_DIR}/traces/conflated/
 cp -rf ${TESTDATA_DIR}/conflated/* ${LOCAL_DIR}/traces/conflated/
 
 # Running setup
-if [ "$1" == "dev-mode" ]; then
-    echo "no need to run setup -- everything is dummy"
-else
-    echo "running the setup for needed circuits"
-    # TODO @gbotrel: we use dummy circuit here while waiting for execution to be functional end-to-end
-    make bin/prover
-    bin/prover setup --dict ./lib/compressor/compressor_dict.bin --force --config ${CONFIG_FILE} --circuits execution,aggregation,emulation --assets-dir ./prover-assets
-fi
+# if [ "$1" == "dev-mode" ]; then
+#     echo "no need to run setup -- everything is dummy"
+# else
+#     echo "running the setup for needed circuits"
+#     # TODO @gbotrel: we use dummy circuit here while waiting for execution to be functional end-to-end
+#     make bin/prover
+#     bin/prover setup --dict ./lib/compressor/compressor_dict.bin --force --config ${CONFIG_FILE} --circuits execution,blob-decompression-v0,blob-decompression-v1,aggregation,public-input-interconnection --assets-dir ./prover-assets
+# fi
 
-# Refresh, Build and run the docker in the background
+# Refresh, Build and run the docker in the background blob-decompression-v0 blob-decompression-v1 emulation-dummy aggregation emulation public-input-interconnection"`
+
 echo "starting the environment"
 
-docker compose -f compose-integration.yml kill -s SIGINT &>/dev/null
-docker compose -f compose-integration.yml down &>/dev/null
-docker compose -f compose-integration.yml build
-docker compose -f compose-integration.yml run --rm -v ${LOCAL_DIR}:/shared/ -e CONFIG_FILE="/opt/linea/prover/${CONFIG_FILE}" prover &>${LOCAL_DIR}/prover.log &
+sudo docker compose -f compose-integration.yml kill -s SIGINT &>/dev/null
+sudo docker compose -f compose-integration.yml down &>/dev/null
+sudo docker compose -f compose-integration.yml build
+sudo docker compose -f compose-integration.yml run --rm -v ${LOCAL_DIR}:/shared/ -e CONFIG_FILE="/opt/linea/prover/${CONFIG_FILE}" prover &>${LOCAL_DIR}/prover.log &
 
 echo "waiting for the prover to process the requests..."
 
 # The commands takes a long time to run, so we can expect the container
 # deployment to be ready once the above command exits. Now, we shall wait a few
 # minutes to leave time for the prover to be finished.
-./integration/wait-empty-dir.sh ${LOC_AGGREG_REQ_DIR}
+sudo ./integration/wait-empty-dir.sh ${LOC_AGGREG_REQ_DIR}
 
 echo "Done waiting for the prover to finish, killing the container and cleaning the resources..."
 
 # At this point the controller in the prover service is still running and we
 # need to kill it.
-docker compose -f compose-integration.yml kill -s SIGINT
+sudo docker compose -f compose-integration.yml stop
 sleep 2
-docker compose -f compose-integration.yml down
+sudo docker compose -f compose-integration.yml down
 
 echo "Updating the testdata, with the generated prover's responses"
 

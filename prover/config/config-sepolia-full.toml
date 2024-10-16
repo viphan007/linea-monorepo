@@ -7,19 +7,16 @@ log_level = 4                                  # TODO @gbotrel will be refactore
 retry_delays = [0, 1]
 
 [execution]
-prover_mode = "dev"
-requests_root_dir = "/home/ubuntu/setup/linea-monorepo/prover/integration/full-mode/tmp/prover-execution"
+prover_mode = "full"
 
 [blob_decompression]
-prover_mode = "full"
-requests_root_dir = "/home/ubuntu/setup/linea-monorepo/prover/integration/full-mode/tmp/prover-compression"
+prover_mode = "dev"
 
 [aggregation]
-prover_mode = "full"
-num_proofs = [10, 20, 50, 100, 200, 400]
-allowed_inputs = ["execution-dummy", "execution", "execution-large", "blob-decompression-v0", "blob-decompression-v1", "aggregation"]
-verifier_id = 1
-requests_root_dir = "/home/ubuntu/setup/linea-monorepo/prover/integration/full-mode/tmp/prover-aggregation"
+prover_mode = "dev"
+num_proofs = [200]
+allowed_inputs = ["execution-dummy", "execution", "execution-large", "blob-decompression-dummy", "emulation-dummy", "public-input-interconnection"]
+verifier_id = 4
 
 [public_input_interconnection]
 max_nb_decompression = 400

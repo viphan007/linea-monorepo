@@ -1,3 +1,5 @@
+*.lt
+*.json
 *.bak
 *.swp
 *.tmp

@@ -55,8 +55,8 @@ COPY --from=go-builder /usr/src/prover/bin/controller /opt/linea/prover/controll
 RUN mkdir -p /opt/linea/prover/config
 
 # Useful ENV variables that you may want to pass at runtime
-ENV GOMEMLIMIT=340GiB
-ENV CONFIG_FILE="/opt/linea/prover/config/config.toml"
+ENV GOMEMLIMIT=700GiB
+ENV CONFIG_FILE="/opt/linea/prover/config/config-integration-full.toml"
 
 ENV PATH="${PATH}:/opt/linea/prover/"
 

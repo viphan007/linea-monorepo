@@ -41,6 +41,7 @@ var (
 	dummyCompilationSuite = compilationSuite{dummy.CompileAtProverLvl}
 
 	// This is the compilation suite in use for the full prover
+	// skip initial roudn of self recursion
 	fullCompilationSuite = compilationSuite{
 		// logdata.Log("initial-wizard"),
 		mimc.CompileMiMC,

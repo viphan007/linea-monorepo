@@ -14,7 +14,8 @@ lispified
 !**/verifying_key.bin
 **/circuit.bin
 prover/zkevm/arithmetization/zkevm.bin
-
+*.lt
+*.json
 
 
 # Binaries for programs and plugins
