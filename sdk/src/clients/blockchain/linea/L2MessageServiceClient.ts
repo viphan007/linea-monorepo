@@ -21,6 +21,7 @@ import { IGasProvider, LineaGasFees } from "../../../core/clients/blockchain/IGa
 import { IMessageRetriever } from "../../../core/clients/blockchain/IMessageRetriever";
 import { MessageSent } from "../../../core/types/Events";
 import { IL2ChainQuerier } from "../../../core/clients/blockchain/linea/IL2ChainQuerier";
+import { IMulticallV3ContractClient } from "../../../core/clients/blockchain/IMulticallV3ContractClient";
 
 export class L2MessageServiceClient
   implements
@@ -49,6 +50,7 @@ export class L2MessageServiceClient
     private readonly contractAddress: string,
     private readonly messageRetriever: IMessageRetriever<TransactionReceipt>,
     private readonly gasFeeProvider: IGasProvider<TransactionRequest>,
+    private readonly multicallClient: IMulticallV3ContractClient,
     private readonly mode: SDKMode,
     private readonly signer?: Signer,
   ) {
@@ -123,6 +125,29 @@ export class L2MessageServiceClient
   public async getMessageStatus(messageHash: string, overrides: Overrides = {}): Promise<OnChainMessageStatus> {
     const status = await this.contract.inboxL1L2MessageStatus(messageHash, overrides);
     return formatMessageStatus(status);
+  }
+
+  /**
+   * Retrieves the L1 message status on L2.
+   *
+   * @param {string} messageHash - The hash of the message sent on L1.
+   * @param {Overrides} [overrides={}] - Ethers call overrides. Defaults to `{}` if not specified.
+   * @returns {Promise<OnChainMessageStatus>} Message status (CLAIMED, CLAIMABLE, UNKNOWN).
+   */
+  public async getMessagesStatuses(messageHashes: string[]): Promise<OnChainMessageStatus[]> {
+    const calls = messageHashes.map((messageHash) => ({
+      target: this.contractAddress,
+      calldata: this.contract.interface.encodeFunctionData("inboxL1L2MessageStatus", [messageHash]),
+    }));
+
+    const result = await this.multicallClient.multicall(calls);
+
+    const statuses = result.map((res) =>
+      formatMessageStatus(
+        this.contract.interface.decodeFunctionResult("inboxL1L2MessageStatus", res[1])[0] as unknown as bigint,
+      ),
+    );
+    return statuses;
   }
 
   /**

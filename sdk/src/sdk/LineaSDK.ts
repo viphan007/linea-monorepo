@@ -20,6 +20,7 @@ import { MerkleTreeService } from "../clients/blockchain/ethereum/MerkleTreeServ
 import { L2MessageServiceMessageRetriever } from "../clients/blockchain/linea/L2MessageServiceMessageRetriever";
 import { ChainQuerier } from "../clients/blockchain/ChainQuerier";
 import { L2ChainQuerier } from "../clients/blockchain/linea/L2ChainQuerier";
+import { MulticallV3ContractClient } from "../clients/blockchain/MulticallV3ContractClient";
 
 export class LineaSDK {
   private network: Network;
@@ -163,6 +164,7 @@ export class LineaSDK {
         maxFeePerGas: this.maxFeePerGas,
         enforceMaxGasFee: false,
       }),
+      new MulticallV3ContractClient(l2ChainQuerier, this.mode, signer),
       this.mode,
       signer,
     );

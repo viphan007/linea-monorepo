@@ -36,6 +36,7 @@ import { GasProvider } from "../../../clients/blockchain/gas/GasProvider";
 import { LineaTransactionValidationService } from "../../../services/LineaTransactionValidationService";
 import { EthereumTransactionValidationService } from "../../../services/EthereumTransactionValidationService";
 import { getConfig } from "./config/utils";
+import { MulticallV3ContractClient } from "../../../clients/blockchain/MulticallV3ContractClient";
 
 export class PostmanServiceClient {
   // L1 -> L2 flow
@@ -138,11 +139,14 @@ export class PostmanServiceClient {
       l1Signer,
     );
 
+    const l2MulticallContract = new MulticallV3ContractClient(l2Querier, "read-write", l2Signer);
+
     const l2MessageServiceContract = new L2MessageServiceClient(
       l2Querier,
       config.l2Config.messageServiceContractAddress,
       l2MessageServiceMessageRetriever,
       l2GasProvider,
+      l2MulticallContract,
       "read-write",
       l2Signer,
     );
