@@ -22,6 +22,7 @@ type ByRoundRegister[ID comparable, DATA any] struct {
 	// Marks an entry as skippedFromVerifierTranscript from the FS transcript for the verifier
 	skippedFromVerifierTranscript collection.Set[ID]
 	skippedFromProverTranscript   collection.Set[ID]
+	sentButSkippedFromFS          collection.Set[ID]
 }
 
 /*
@@ -35,6 +36,7 @@ func NewRegister[ID comparable, DATA any]() ByRoundRegister[ID, DATA] {
 		ignored:                       collection.NewSet[ID](),
 		skippedFromVerifierTranscript: collection.NewSet[ID](),
 		skippedFromProverTranscript:   collection.NewSet[ID](),
+		sentButSkippedFromFS:          collection.NewSet[ID](),
 	}
 }
 
@@ -207,4 +209,24 @@ missing from the map.
 func (r *ByRoundRegister[ID, DATA]) IsSkippedFromProverTranscript(id ID) bool {
 	r.mapping.MustExists(id)
 	return r.skippedFromProverTranscript.Exists(id)
+}
+
+/*
+Marks an entry as sent to the verifier but excluded from the FS transcript. Panic
+if the key is missing from the register. Returns true if the item was already
+ignored.
+*/
+func (r *ByRoundRegister[ID, DATA]) MarkAsSentButSkippedFromFS(id ID) bool {
+	r.mapping.MustExists(id)
+	r.sentButSkippedFromFS.Insert(id)
+	return r.sentButSkippedFromFS.Insert(id)
+}
+
+/*
+Returns if the entry is sent to verifier but skipped from the transcript. Panics
+if the entry is missing from the map.
+*/
+func (r *ByRoundRegister[ID, DATA]) IsSentButSkippedFromFS(id ID) bool {
+	r.mapping.MustExists(id)
+	return r.sentButSkippedFromFS.Exists(id)
 }

@@ -168,12 +168,22 @@ func (run *VerifierRuntime) generateAllRandomCoins() {
 				*/
 				msgsToFS := run.Spec.Columns.AllKeysProofAt(currRound - 1)
 				for _, msgName := range msgsToFS {
+
+					if run.Spec.Columns.IsExcludedFromFS(msgName) {
+						continue
+					}
+
 					instance := run.GetColumn(msgName)
 					run.FS.UpdateSV(instance)
 				}
 
 				msgsToFS = run.Spec.Columns.AllKeysPublicInputAt(currRound - 1)
 				for _, msgName := range msgsToFS {
+
+					if run.Spec.Columns.IsExcludedFromFS(msgName) {
+						continue
+					}
+
 					instance := run.GetColumn(msgName)
 					run.FS.UpdateSV(instance)
 				}
@@ -184,6 +194,10 @@ func (run *VerifierRuntime) generateAllRandomCoins() {
 				queries := run.Spec.QueriesParams.AllKeysAt(currRound - 1)
 				for _, qName := range queries {
 					if run.Spec.QueriesParams.IsSkippedFromVerifierTranscript(qName) {
+						continue
+					}
+
+					if run.Spec.QueriesParams.IsSentButSkippedFromFS(qName) {
 						continue
 					}
 

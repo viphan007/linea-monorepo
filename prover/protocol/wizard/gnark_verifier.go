@@ -151,9 +151,9 @@ func (c *WizardVerifierCircuit) Verify(api frontend.API) {
 	c.HasherFactory = gkrmimc.NewHasherFactory(api)
 	c.FS = fiatshamir.NewGnarkFiatShamir(api, c.HasherFactory)
 	c.FS.Update(c.Spec.fiatShamirSetup)
-	c.generateAllRandomCoins(api)
-
 	c.FiatShamirHistory = make([][3][]frontend.Variable, c.Spec.NumRounds())
+
+	c.generateAllRandomCoins(api)
 
 	for _, roundSteps := range c.Spec.SubVerifiers.Inner() {
 		for _, step := range roundSteps {
@@ -180,12 +180,22 @@ func (c *WizardVerifierCircuit) generateAllRandomCoins(api frontend.API) {
 			// the last one to "talk" in the protocol.
 			toUpdateFS := c.Spec.Columns.AllKeysProofAt(currRound - 1)
 			for _, msg := range toUpdateFS {
+
+				if c.Spec.Columns.IsExcludedFromFS(msg) {
+					continue
+				}
+
 				msgContent := c.GetColumn(msg)
 				c.FS.UpdateVec(msgContent)
 			}
 
 			toUpdateFS = c.Spec.Columns.AllKeysPublicInputAt(currRound - 1)
 			for _, msg := range toUpdateFS {
+
+				if c.Spec.Columns.IsExcludedFromFS(msg) {
+					continue
+				}
+
 				msgContent := c.GetColumn(msg)
 				c.FS.UpdateVec(msgContent)
 			}
@@ -196,6 +206,10 @@ func (c *WizardVerifierCircuit) generateAllRandomCoins(api frontend.API) {
 			queries := c.Spec.QueriesParams.AllKeysAt(currRound - 1)
 			for _, qName := range queries {
 				if c.Spec.QueriesParams.IsSkippedFromVerifierTranscript(qName) {
+					continue
+				}
+
+				if c.Spec.QueriesParams.IsSentButSkippedFromFS(qName) {
 					continue
 				}
 

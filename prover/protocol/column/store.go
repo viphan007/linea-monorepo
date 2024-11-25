@@ -47,6 +47,9 @@ type storedColumnInfo struct {
 	// IncludeInProverFS states the prover should include the column in his FS
 	// transcript. This is used for columns that are recursed using FullRecursion.
 	IncludeInProverFS bool
+	// SentButExcludedFromFS indicates that the column should not be included in
+	// the FS transcript regardless of its visibility.
+	SentButExcludedFromFS bool
 }
 
 // AddToRound constructs a [Natural], registers it in the [Store] and returns
@@ -457,6 +460,16 @@ func (s *Store) IgnoreButKeepInProverTranscript(colName ifaces.ColID) {
 func (s *Store) IsIgnoredAndNotKeptInTranscript(colName ifaces.ColID) bool {
 	in := s.info(colName)
 	return in.Status == Ignored && !in.IncludeInProverFS
+}
+
+func (s *Store) ExcludeFromFS(colName ifaces.ColID) {
+	in := s.info(colName)
+	in.SentButExcludedFromFS = true
+}
+
+func (s *Store) IsExcludedFromFS(colName ifaces.ColID) bool {
+	in := s.info(colName)
+	return in.SentButExcludedFromFS
 }
 
 func (s *Store) AllKeysProofsOrIgnoredButKeptInProverTranscript(round int) []ifaces.ColID {

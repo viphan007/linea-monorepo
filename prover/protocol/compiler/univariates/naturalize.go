@@ -169,6 +169,7 @@ func (ctx *naturalizationCtx) registersTheNewQueries(comp *wizard.CompiledIOP) {
 	*/
 	for queryID, qName := range ctx.subQueriesNames {
 		comp.InsertUnivariate(ctx.roundID, qName, ctx.polsPerSubQuery[queryID])
+		comp.QueriesParams.MarkAsSentButSkippedFromFS(qName)
 	}
 
 	/*

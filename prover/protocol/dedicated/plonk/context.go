@@ -236,6 +236,11 @@ func (ctx compilationCtx) ConcatenatedTinyPIs(size int) ifaces.Column {
 	)
 }
 
+// TinyPIs returns the raw list of the public inputs columns
+func (ctx compilationCtx) TinyPI() []ifaces.Column {
+	return ctx.Columns.TinyPI
+}
+
 // GetPlonkProverAction returns the [PlonkInWizardProverAction] responsible for
 // assigning the first round of the wizard. In case we use the BBS commitment
 // this stands for [initialBBSProverAction] or [noCommitProverAction] in the

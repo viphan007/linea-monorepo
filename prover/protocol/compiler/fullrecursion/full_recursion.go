@@ -31,11 +31,18 @@ func FullRecursion(withoutGkr bool) func(comp *wizard.CompiledIOP) {
 			funcPiOffset = 3 + len(ctx.NonEmptyMerkleRootPositions) + len(ctx.PolyQuery.Pols)
 		)
 
+		if withoutGkr {
+			c.withoutGkr = true
+		}
+
 		selfrecursion.SelfRecurse(comp)
 
 		piw := plonk.PlonkCheck(comp, "full-recursion-"+strconv.Itoa(comp.SelfRecursionCount), ctx.LastRound, c, 1)
 
 		ctx.PlonkInWizard.PI = piw.ConcatenatedTinyPIs(utils.NextPowerOfTwo(numPI))
+		tinyPI := piw.TinyPI()
+		comp.Columns.ExcludeFromFS(tinyPI[0].GetColID())
+
 		ctx.PlonkInWizard.ProverAction = piw.GetPlonkProverAction()
 
 		for i := 0; i < numPI; i++ {
@@ -49,7 +56,13 @@ func FullRecursion(withoutGkr bool) func(comp *wizard.CompiledIOP) {
 				)
 			)
 
+			// The LO query is for a column that is already verifier col. So
+			// no need to put it in the transcript.
 			ctx.LocalOpenings = append(ctx.LocalOpenings, lo)
+		}
+
+		for i := 0; i < funcPiOffset; i++ {
+			comp.QueriesParams.MarkAsSentButSkippedFromFS(ctx.LocalOpenings[i].Name())
 		}
 
 		for i := range comp.PublicInputs {

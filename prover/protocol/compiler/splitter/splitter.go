@@ -96,7 +96,7 @@ func Compile(comp *wizard.CompiledIOP, size int) {
 			}
 
 			if h.Size()%ctx.size != 0 {
-				panic("the size does not divide")
+				utils.Panic("the size %v does not divide the target size %v", ctx.size)
 			}
 
 			// Mark the handle as ignored

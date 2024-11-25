@@ -129,12 +129,22 @@ func (c *gnarkCircuit) generateAllRandomCoins(api frontend.API) {
 
 			toUpdateFS := ctx.Columns[currRound-1]
 			for _, msg := range toUpdateFS {
+
+				if w.Spec.Columns.IsExcludedFromFS(msg.GetColID()) {
+					continue
+				}
+
 				val := w.GetColumn(msg.GetColID())
 				w.FS.UpdateVec(val)
 			}
 
 			queries := ctx.QueryParams[currRound-1]
 			for _, q := range queries {
+
+				if w.Spec.QueriesParams.IsSentButSkippedFromFS(q.Name()) {
+					continue
+				}
+
 				params := w.GetParams(q.Name())
 				params.UpdateFS(w.FS)
 			}

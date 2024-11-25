@@ -1,6 +1,7 @@
 package execution
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/consensys/gnark/frontend"
@@ -32,7 +33,7 @@ func checkPublicInputs(
 	shouldBeEqual(api, execDataHash, gnarkFuncInp.DataChecksum)
 
 	api.AssertIsEqual(
-		wvc.GetLocalPointEvalParams(wizardFuncInp.L2MessageHash.ID).Y,
+		findPubInput(api, wvc, publicInput.PubInputNameL2MessageHash),
 		// TODO: this operation is done a second time when computing the final
 		// public input which is wasteful although not dramatic (~8000 unused
 		// constraints)
@@ -40,62 +41,62 @@ func checkPublicInputs(
 	)
 
 	api.AssertIsEqual(
-		wvc.GetLocalPointEvalParams(wizardFuncInp.InitialStateRootHash.ID).Y,
+		findPubInput(api, wvc, publicInput.PubInputNameFinalStateRootHash),
 		gnarkFuncInp.InitialStateRootHash,
 	)
 
 	api.AssertIsEqual(
-		wvc.GetLocalPointEvalParams(wizardFuncInp.InitialBlockNumber.ID).Y,
+		findPubInput(api, wvc, publicInput.PubInputNameInitialBlockNumber),
 		gnarkFuncInp.InitialBlockNumber,
 	)
 
 	api.AssertIsEqual(
-		wvc.GetLocalPointEvalParams(wizardFuncInp.InitialBlockTimestamp.ID).Y,
+		findPubInput(api, wvc, publicInput.PubInputNameInitialBlockTimestamp),
 		gnarkFuncInp.InitialBlockTimestamp,
 	)
 
 	api.AssertIsEqual(
-		wvc.GetLocalPointEvalParams(wizardFuncInp.InitialRollingHash[0].ID).Y,
+		findPubInput(api, wvc, publicInput.PubInputNameInitialRollingHash_0),
 		initialRollingHash[0],
 	)
 
 	api.AssertIsEqual(
-		wvc.GetLocalPointEvalParams(wizardFuncInp.InitialRollingHash[1].ID).Y,
+		findPubInput(api, wvc, publicInput.PubInputNameInitialRollingHash_1),
 		initialRollingHash[1],
 	)
 
 	api.AssertIsEqual(
-		wvc.GetLocalPointEvalParams(wizardFuncInp.InitialRollingHashNumber.ID).Y,
+		findPubInput(api, wvc, publicInput.PubInputNameInitialRollingHashNumber),
 		gnarkFuncInp.InitialRollingHashNumber,
 	)
 
 	api.AssertIsEqual(
-		wvc.GetLocalPointEvalParams(wizardFuncInp.FinalStateRootHash.ID).Y,
+		findPubInput(api, wvc, publicInput.PubInputNameFinalStateRootHash),
 		gnarkFuncInp.FinalStateRootHash,
 	)
 
 	api.AssertIsEqual(
-		wvc.GetLocalPointEvalParams(wizardFuncInp.FinalBlockNumber.ID).Y,
+		findPubInput(api, wvc, publicInput.PubInputNameFinalBlockNumber),
 		gnarkFuncInp.FinalBlockNumber,
 	)
 
 	api.AssertIsEqual(
-		wvc.GetLocalPointEvalParams(wizardFuncInp.FinalBlockTimestamp.ID).Y,
+		findPubInput(api, wvc, publicInput.PubInputNameFinalBlockTimestamp),
 		gnarkFuncInp.FinalBlockTimestamp,
 	)
 
 	api.AssertIsEqual(
-		wvc.GetLocalPointEvalParams(wizardFuncInp.FinalRollingHash[0].ID).Y,
+		findPubInput(api, wvc, publicInput.PubInputNameFinalRollingHash_0),
 		finalRollingHash[0],
 	)
 
 	api.AssertIsEqual(
-		wvc.GetLocalPointEvalParams(wizardFuncInp.FinalRollingHash[1].ID).Y,
+		findPubInput(api, wvc, publicInput.PubInputNameFinalRollingHash_1),
 		finalRollingHash[1],
 	)
 
 	api.AssertIsEqual(
-		wvc.GetLocalPointEvalParams(wizardFuncInp.FinalRollingHashNumber.ID).Y,
+		findPubInput(api, wvc, publicInput.PubInputNameFinalRollingHashNumber),
 		gnarkFuncInp.FinalRollingHashNumber,
 	)
 
@@ -107,15 +108,15 @@ func checkPublicInputs(
 		bridgeAddress = api.Add(
 			api.Mul(
 				twoPow128,
-				wizardFuncInp.L2MessageServiceAddrHi.GetFrontendVariable(api, wvc),
+				findPubInput(api, wvc, publicInput.PubInputNameL2MessageServiceAddrHi),
 			),
-			wizardFuncInp.L2MessageServiceAddrLo.GetFrontendVariable(api, wvc),
+			findPubInput(api, wvc, publicInput.PubInputNameL2MessageServiceAddrLo),
 		)
 	)
 
 	api.AssertIsEqual(
 		api.Div(
-			wvc.GetLocalPointEvalParams(wizardFuncInp.ChainID.ID).Y,
+			findPubInput(api, wvc, publicInput.PubInputNameChainID),
 			twoPow112,
 		),
 		gnarkFuncInp.ChainID,
@@ -140,8 +141,8 @@ func execDataHash(
 	}
 
 	hsh.Write(
-		wvc.GetLocalPointEvalParams(wFuncInp.DataNbBytes.ID).Y,
-		wvc.GetLocalPointEvalParams(wFuncInp.DataChecksum.ID).Y,
+		findPubInput(api, wvc, publicInput.PubInputNameDataNbBytes),
+		findPubInput(api, wvc, publicInput.PubInputNameDataChecksum),
 	)
 
 	return hsh.Sum()
@@ -152,4 +153,15 @@ func execDataHash(
 // out the api.AssertIsEqual we might have an unconstrained variable.
 func shouldBeEqual(api frontend.API, a, b frontend.Variable) {
 	_ = api.Sub(a, b)
+}
+
+func findPubInput(api frontend.API, wvc *wizard.WizardVerifierCircuit, name string) frontend.Variable {
+
+	for _, wp := range wvc.Spec.PublicInputs {
+		if wp.Name == name {
+			return wp.Acc.GetFrontendVariable(api, wvc)
+		}
+	}
+
+	panic(fmt.Sprintf("could not find public input with name %v, the available list is %v", name, wvc.Spec.PublicInputs))
 }
