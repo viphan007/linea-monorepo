@@ -368,8 +368,6 @@ func (c *Compiled) Assign(r Request) (a Circuit, err error) {
 	// but would be doubly redundant. We can remove it then.
 	a.ChainID = r.Aggregation.ChainID
 	a.L2MessageServiceAddr = r.Aggregation.L2MessageServiceAddr
-	logrus.Infof("%d executions", len(r.Executions))
-
 
 	return
 }
