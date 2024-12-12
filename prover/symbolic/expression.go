@@ -253,6 +253,86 @@ func (e *Expression) ReconstructBottomUp(
 	panic("unreachable")
 }
 
+// ReconstructBottomUpParallel is as [ReconstructBottomUp] and runs in parallel
+// by creating a go-routine per sub-children with a maximum of goroutines
+// being active at once.
+func (e *Expression) ReconstructBottomUpParallel(
+	constructor func(e *Expression, children []*Expression) (new *Expression),
+	maxNbGoRoutines int,
+) *Expression {
+
+	bucket := make(chan struct{}, maxNbGoRoutines)
+	for i := 0; i < maxNbGoRoutines; i++ {
+		bucket <- struct{}{}
+	}
+
+	return <-reconstructBottomUpWithSemaphore(e, constructor, bucket)
+}
+
+// reconstructBottomUpWithSemaphore applies `constructor“ over all its children
+// starting with the leaves of the expression. After constructor has been applied
+// over the sub expressions, the constructor is applied over the node itself.
+// All calls to the constructor function are run in parallel and are throttled
+// using `bucket`. The resulting expression returns a channel that is going to
+// receive the resulting expression and is immediately closed.
+func reconstructBottomUpWithSemaphore(
+	e *Expression,
+	constructor func(e *Expression, children []*Expression) (new *Expression),
+	bucket chan struct{},
+) chan *Expression {
+
+	res := make(chan *Expression)
+
+	switch e.Operator.(type) {
+
+	// Constant, indicating we reached the bottom of the expression. Thus it
+	// applies the mutator and returns.
+	case Constant, Variable:
+
+		// Importantly, we want to be sure that the maximum number of goroutines
+		// has not been reached before we create a new one.
+		<-bucket
+		go func() {
+			f := constructor(e, []*Expression{})
+			res <- f
+			defer close(res)
+			bucket <- struct{}{}
+		}()
+		return res
+
+	// LinComb or Product or PolyEval. This is an intermediate expression.
+	case LinComb, Product, PolyEval:
+
+		var (
+			children      = make([]*Expression, len(e.Children))
+			childrenChans = make([]chan *Expression, len(e.Children))
+		)
+
+		// This dispatches the go-routines creations to all the children. The
+		// newChildrens will be returned via a dedicated channel for each.
+		for i, c := range e.Children {
+			childrenChans[i] = reconstructBottomUpWithSemaphore(c, constructor, bucket)
+		}
+
+		for i := range e.Children {
+			children[i] = <-childrenChans[i]
+		}
+
+		// Importantly, we want to be sure that the maximum number of goroutines
+		// has not been reached before we create a new one.
+		<-bucket
+		go func() {
+			f := constructor(e, children)
+			res <- f
+			defer close(res)
+			bucket <- struct{}{}
+		}()
+		return res
+	}
+
+	panic("unreachable")
+}
+
 // SameWithNewChildren constructs a new expression that is a copy-cat of the
 // receiver expression but swapping the children with the new ones instead. It
 // is common for rebuilding expressions. If the expression is a variable or a

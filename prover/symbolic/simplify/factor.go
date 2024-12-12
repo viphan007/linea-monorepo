@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"runtime"
 	"sort"
 
 	"github.com/consensys/linea-monorepo/prover/maths/field"
@@ -15,9 +16,13 @@ import (
 // factorizeExpression attempt to simplify the expression by identifying common
 // factors within sums and factor them into a single term.
 func factorizeExpression(expr *sym.Expression, iteration int) *sym.Expression {
-	res := expr
-	initEsh := expr.ESHash
-	alreadyWalked := map[field.Element]*sym.Expression{}
+
+	var (
+		res             = expr
+		initEsh         = expr.ESHash
+		alreadyWalked   = map[field.Element]*sym.Expression{}
+		maxNbGoRoutines = 2 * runtime.GOMAXPROCS(0)
+	)
 
 	logrus.Infof("factoring expression : init stats %v", evaluateCostStat(expr))
 
@@ -25,7 +30,7 @@ func factorizeExpression(expr *sym.Expression, iteration int) *sym.Expression {
 
 		scoreInit := evaluateCostStat(res)
 
-		res = res.ReconstructBottomUp(func(lincomb *sym.Expression, newChildren []*sym.Expression) *sym.Expression {
+		res = res.ReconstructBottomUpParallel(func(lincomb *sym.Expression, newChildren []*sym.Expression) *sym.Expression {
 
 			// Time save, we reuse the results we got for that particular node.
 			if ret, ok := alreadyWalked[lincomb.ESHash]; ok {
@@ -55,19 +60,9 @@ func factorizeExpression(expr *sym.Expression, iteration int) *sym.Expression {
 
 				group := findGdChildrenGroup(new)
 
-				logrus.Tracef("found children group: %v\n", group)
-
 				if len(group) < 1 {
-					if k > 0 {
-						logrus.Tracef("finished factoring : %v opportunities", k)
-					}
 					return new
 				}
-
-				logrus.Tracef(
-					"factoring an expression with a set of %v siblings",
-					len(group),
-				)
 
 				new = factorLinCompFromGroup(new, group)
 
@@ -79,9 +74,8 @@ func factorizeExpression(expr *sym.Expression, iteration int) *sym.Expression {
 				prevSize = len(new.Children)
 			}
 
-			logrus.Tracef("finished factoring slow node")
 			return new
-		})
+		}, maxNbGoRoutines)
 
 		if res.ESHash != initEsh {
 			panic("altered esh")
@@ -182,10 +176,6 @@ func findGdChildrenGroup(expr *sym.Expression) map[field.Element]*sym.Expression
 
 		childrenSet = newChildrenSet
 		curParents = newParents
-
-		logrus.Tracef(
-			"find groups, so far we have %v parents and %v siblings",
-			len(curParents), len(childrenSet))
 
 		// Sanity-check
 		if err := parentsMustHaveAllChildren(curParents, childrenSet); err != nil {

@@ -5,12 +5,17 @@ package simplify
 import (
 	sym "github.com/consensys/linea-monorepo/prover/symbolic"
 	"github.com/consensys/linea-monorepo/prover/utils"
+	"github.com/consensys/linea-monorepo/prover/utils/profiling"
 )
 
 var (
 	autoFactorize = func(e *sym.Expression) *sym.Expression {
-		// The choice of 16 is empirical
-		return factorizeExpression(e, 16)
+		var f *sym.Expression
+		profiling.ProfileTrace("factoring-expression-"+e.ESHash.String(), true, false, func() {
+			// The choice of 16 is empirical
+			f = factorizeExpression(e, 16)
+		})
+		return f
 	}
 )
 

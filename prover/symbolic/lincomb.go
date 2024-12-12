@@ -38,7 +38,7 @@ type LinComb struct {
 func NewLinComb(items []*Expression, coeffs []int) *Expression {
 
 	if len(items) != len(coeffs) {
-		panic("unmatching lengths")
+		utils.Panic("unmatching lengths between coeffs (%v) and items (%v)", items, coeffs)
 	}
 
 	coeffs, items = expandTerms(&LinComb{}, coeffs, items)
