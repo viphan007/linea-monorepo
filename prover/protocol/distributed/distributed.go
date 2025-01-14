@@ -21,6 +21,7 @@ type DistributedWizard struct {
 
 // DistributedModule implements the utilities relevant to a single segment from a module.
 type DistributedModule struct {
+	Name           ModuleName
 	LookupPermProj *wizard.CompiledIOP
 	GlobalLocal    *wizard.CompiledIOP
 }
