@@ -11,7 +11,6 @@ import org.apache.logging.log4j.Logger
 import tech.pegasys.teku.infrastructure.async.SafeFuture
 import java.util.concurrent.PriorityBlockingQueue
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicInteger
 
 class ConflationServiceImpl(
   private val calculator: TracesConflationCalculator,
@@ -32,7 +31,7 @@ class ConflationServiceImpl(
   }
 
   internal val blocksToConflate = PriorityBlockingQueue<PayloadAndBlockCounters>()
-  private val batchSizeInBlocks = AtomicInteger(0)
+
   private val blocksCounter = metricsFacade.createCounter(
     category = LineaMetricsCategory.CONFLATION,
     name = "blocks.imported",
@@ -52,12 +51,6 @@ class ConflationServiceImpl(
       description = "Number of blocks in conflation queue",
       measurementSupplier = { blocksToConflate.size }
     )
-    metricsFacade.createGauge(
-      category = LineaMetricsCategory.CONFLATION,
-      name = "blocks.size",
-      description = "Number of blocks in each conflated batch",
-      measurementSupplier = { batchSizeInBlocks.get() }
-    )
     calculator.onConflatedBatch(this::handleConflation)
   }
 
@@ -70,8 +63,6 @@ class ConflationServiceImpl(
       conflation.tracesCounters,
       conflation.blocksRange.joinToString(",", "[", "]") { it.toString() }
     )
-    batchSizeInBlocks.set(conflation.blocksRange.count())
-
     val blocksToConflate =
       blocksInProgress
         .filter { it.number in conflation.blocksRange }
